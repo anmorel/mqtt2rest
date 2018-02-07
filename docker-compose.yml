@@ -1,7 +1,5 @@
 version: '3'
 services:
-  mqtt2db:
-    build: mqtt2db/.
   mosqiuitto:
     image: eclipse-mosquitto
     ports:
@@ -21,3 +19,9 @@ services:
     build: restifydb/.
     ports:
       - 8090:80
+  mqtt2db:
+    build: mqtt2db/.
+    depends_on:
+      - mosqiuitto
+      - db
+

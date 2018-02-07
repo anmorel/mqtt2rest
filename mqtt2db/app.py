@@ -1,29 +1,47 @@
 import time
 
-import redis
-from flask import Flask
+import mysql.connector 
+import paho.mqtt.client as mqtt
+
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc):
+    print("Connected to MQTT server with result code "+str(rc))
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe("$SYS/#")
+
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
+    user = ("olivier", "34")
+    req = """INSERT INTO `data` (`timestamp`, `sensor`, `value`) VALUES(NOW(), %s, %s);"""
+    print(req)
+    cursor.execute(req, user)
+    conn.commit()
 
 
-app = Flask(__name__)
-cache = redis.Redis(host='redis', port=6379)
+
+conn = mysql.connector.connect(host="db",user="example",password="example", database="example")
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS`data` (
+  `timestamp` timestamp NOT NULL,
+  `sensor` varchar(32) NOT NULL,
+  `value` varchar(32) NOT NULL
+) ENGINE='InnoDB';
+""")
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect("mosqiuitto", 1883, 60)
+
+# Blocking call that processes network traffic, dispatches callbacks and
+# handles reconnecting.
+# Other loop*() functions are available that give a threaded interface and a
+# manual interface.
+client.loop_forever()
 
 
-def get_hit_count():
-    retries = 5
-    while True:
-        try:
-            return cache.incr('hits')
-        except redis.exceptions.ConnectionError as exc:
-            if retries == 0:
-                raise exc
-            retries -= 1
-            time.sleep(0.5)
-
-
-@app.route('/')
-def hello():
-    count = get_hit_count()
-    return 'Hello World! I have been seen {} times.\n'.format(count)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)

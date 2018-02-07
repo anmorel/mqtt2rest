@@ -1,4 +1,6 @@
-paho–mqtt
 mysql
-MySQL-python
+paho-mqtt
+mysql-python
 mysql-connector-python
+flask
+
