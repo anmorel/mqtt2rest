@@ -24,4 +24,7 @@ services:
     depends_on:
       - mosqiuitto
       - db
-
+  mqttclient:
+    build: mqttclient/.
+    depends_on:
+      - mqtt2db
